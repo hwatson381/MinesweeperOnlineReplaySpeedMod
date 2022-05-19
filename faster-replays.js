@@ -1,6 +1,6 @@
 var replayMultiplier = 0.5;
 
-let replayControlsMod = function(){
+let replaySpeedMod = function(){
   if(!(/minesweeper\.online\/game/.test(window.location.href))) {
     alert('You should be running this on minesweeper.online/game/... ya dingus!');
     return;
@@ -281,4 +281,4 @@ ${candidateRegex}`);
   throw new Error('Line break error! Failed to failed to find match for regex - most likely caused by a new line break. No suggestions provided');
 }
 
-replayControlsMod();
+replaySpeedMod();
