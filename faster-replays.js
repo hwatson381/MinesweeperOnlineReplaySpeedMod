@@ -28,47 +28,47 @@ let replayControlsMod = function(){
 function processCode(code) {
   let pauseUnpause = code.match(/on\("click",function\(\){([$a-zA-Z0-9_]{0,6}\.[$a-zA-Z0-9_]{0,6})\(\)}\)\.append\(\$\("<span>",{id:"replay_play_btn",/)[1];
 
-  //UI
+  /*UI*/
   addSlider(pauseUnpause);
 
-  //Find name of the object that contains timer related functions
+  /*Find name of the object that contains timer related functions*/
   let objectWithReplayStuff = code.match(/([$a-zA-Z0-9_]{0,6})={[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:!1,/)[1];
 
   let funcWithInterval = findFunctionInCode(code,
     /[$a-zA-Z0-9_]{0,6}:function\(\)$/,
     /this\.[$a-zA-Z0-9_]{0,6}\|\|\(this\.[$a-zA-Z0-9_]{0,6}=setInterval\(\$\.proxy\(this/);
     
-  //Change it so setInterval runs more often - how much more often is determined by the value of replayMultiplier
+  /*Change it so setInterval runs more often - how much more often is determined by the value of replayMultiplier*/
   funcWithInterval = assertReplace(funcWithInterval, /\$\.proxy\(this\.i38,this\),/, '$& replayMultiplier *');
   
-  //Currently function looks like abc:function(){...}
-  //change it to look like def.abc=function(){...}
+  /*Currently function looks like abc:function(){...}*/
+  /*change it to look like def.abc=function(){...}*/
   funcWithInterval = objectWithReplayStuff + '.' + assertReplace(funcWithInterval,':','=');
   
   eval(funcWithInterval);
 
-  //Change all the jquery animate stuff to have a shorter duration - how much shorter is determined by the value of replayMultiplier
-  //These animations are used to move the cursor around
+  /*Change all the jquery animate stuff to have a shorter duration - how much shorter is determined by the value of replayMultiplier*/
+  /*These animations are used to move the cursor around*/
   let funcWithCursor = findFunctionInCode(code,
     /[$a-zA-Z0-9_]{0,6}:function\([a-z]\)$/,
     /\$\("#click_circle"\)\.animate/
   );
 
-  //Animation for cursor moving to somewhere else - there are two of these though here we just replace the first one as the second one gets replaced later.
+  /*Animation for cursor moving to somewhere else - there are two of these though here we just replace the first one as the second one gets replaced later.*/
   funcWithCursor = assertReplace(funcWithCursor, /\$\("#click_circle"\)\.animate\([a-z],/, '$& replayMultiplier *');
 
-  //Animations for cursor going invisible
+  /*Animations for cursor going invisible*/
   funcWithCursor = assertReplace(funcWithCursor,
     /(opacity:0},)(this\.[$a-zA-Z0-9_]{0,6}\)},this\),)/,
     '$1 replayMultiplier * $2 replayMultiplier *');
 
-  //Animation for cursor moving to somewhere else, but the 2nd kind - maybe which kind depends on how long they take between clicks, but idk
+  /*Animation for cursor moving to somewhere else, but the 2nd kind - maybe which kind depends on how long they take between clicks, but idk*/
   funcWithCursor = assertReplace(funcWithCursor,
     /(animate\([a-z],)([a-z]\)},this\),)/,
     '$1 replayMultiplier * $2 replayMultiplier *');
 
-  //Currently function looks like abc:function(t){...}
-  //change it to look like def.abc=function(t){...}
+  /*Currently function looks like abc:function(t){...}*/
+  /*change it to look like def.abc=function(t){...}*/
   funcWithCursor = objectWithReplayStuff + '.' + assertReplace(funcWithCursor,':','=');
 
   eval(funcWithCursor);
@@ -83,7 +83,7 @@ function addSlider(pauseUnpause) {
   `;
   sliderContainer.innerHTML = sliderHtml;
 
-  //document.getElementsByClassName('wrapper-pavel-inside')[0].firstChild.appendChild(sliderContainer);
+  /*document.getElementsByClassName('wrapper-pavel-inside')[0].firstChild.appendChild(sliderContainer);*/
   document.getElementsByClassName('result-block')[0].firstChild.prepend(sliderContainer);
 
   document.getElementById('replay-speed').addEventListener('input', function() {
@@ -92,19 +92,19 @@ function addSlider(pauseUnpause) {
     let sliderPosition = this.value;
     let multiplier = 1;
 
-    //Scale value to map to common values
+    /*Scale value to map to common values*/
     if(sliderPosition >= 1 && sliderPosition <= 9) {
-      multiplier = 0.01 * sliderPosition;//0.01 through 0.09
+      multiplier = 0.01 * sliderPosition;/*0.01 through 0.09*/
     } else if(sliderPosition >= 10 && sliderPosition <= 18) {
-      multiplier = 0.1 * (sliderPosition - 9);//0.1 through 0.9
+      multiplier = 0.1 * (sliderPosition - 9);/*0.1 through 0.9*/
     } else if(sliderPosition >= 19 && sliderPosition <= 23) {
-      multiplier = sliderPosition - 18;//1 through 20
+      multiplier = sliderPosition - 18;/*1 through 5*/
     }
 
     replayMultiplier = 1/multiplier;
     document.getElementById('multiplier').textContent = Math.round(multiplier * 100) / 100;
     
-    //Slighty hacky - pause/unpause to fix bug where replay speed doesn't properly update when the replay is already running
+    /*Slighty hacky - pause/unpause to fix bug where replay speed doesn't properly update when the replay is already running*/
     let replayStartButton = document.getElementById('replay_play_btn');
     if(replayStartButton.classList.contains('hide')) {
       eval(`${pauseUnpause}()`);
@@ -114,7 +114,7 @@ function addSlider(pauseUnpause) {
   });
 }
 
-//Helper functions below taekn from my google snake mods.
+/*Helper functions below taken from my google snake mods.*/
 
 /*
 This function will search for a function/method in some code and return this function as a string
@@ -129,7 +129,7 @@ then put somethingInsideFunction = /a\.[$a-zA-Z0-9_]{0,6}&&10!==a\.[$a-zA-Z0-9_]
 */
 function findFunctionInCode(code, functionSignature, somethingInsideFunction, logging = false) {
   let functionSignatureSource = functionSignature.source;
-  let functionSignatureFlags = functionSignature.flags;//Probably empty string
+  let functionSignatureFlags = functionSignature.flags;/*Probably empty string*/
 
   /*Check functionSignature ends in $*/
   if (functionSignatureSource[functionSignatureSource.length - 1] !== "$") {
@@ -210,7 +210,7 @@ function assertReplace(baseText, regex, replacement) {
   }
   let outputText = baseText.replace(regex, replacement);
 
-  //Throw warning if nothing is replaced
+  /*Throw warning if nothing is replaced*/
   if (baseText === outputText) {
     diagnoseRegexError(baseText, regex);
   }
@@ -227,7 +227,7 @@ function assertReplaceAll(baseText, regex, replacement) {
   }
   let outputText = baseText.replaceAll(regex, replacement);
 
-  //Throw warning if nothing is replaced
+  /*Throw warning if nothing is replaced*/
   if (baseText === outputText) {
     diagnoseRegexError(baseText, regex);
   }
@@ -240,24 +240,24 @@ function diagnoseRegexError(baseText, regex) {
     throw new Error('Failed to find match using string argument. No more details available');
   }
 
-  //see if removing line breaks works - in that case we can give a more useful error message
+  /*see if removing line breaks works - in that case we can give a more useful error message*/
   let oneLineText = baseText.replaceAll(/\n/g,'');
   let res = regex.test(oneLineText);
 
-  //If line breaks don't solve the issue then throw a general error
+  /*If line breaks don't solve the issue then throw a general error*/
   if (!res) {
     throw new Error('Failed to find match for regex.');
   }
 
-  //Try to suggest correct regex to use for searching
+  /*Try to suggest correct regex to use for searching*/
   let regexSource = regex.source;
   let regexFlags = regex.flags;
 
-  //Look at all the spots where line breaks might occur and try adding \n? there to see if it makes a difference
-  //It might be easier to just crudely brute force putting \n? at each possible index?
+  /*Look at all the spots where line breaks might occur and try adding \n? there to see if it makes a difference*/
+  /*It might be easier to just crudely brute force putting \n? at each possible index?*/
   for(let breakableChar of ["%","&","\\*","\\+",",","-","\\/",":",";","<","=",">","\\?","{","\\|","}"]) {
     for(let pos = regexSource.indexOf(breakableChar); pos !== -1; pos = regexSource.indexOf(breakableChar, pos + 1)) {
-      //Remake the regex with a new line at the candidate position
+      /*Remake the regex with a new line at the candidate position*/
       let candidateRegexSource = `${regexSource.slice(0,pos + breakableChar.length)}\\n?${regexSource.slice(pos + breakableChar.length)}`;
       let candidateRegex;
       
@@ -267,10 +267,10 @@ function diagnoseRegexError(baseText, regex) {
         continue;
       }
 
-      //See if the new regex works
+      /*See if the new regex works*/
       let testReplaceResult = candidateRegex.test(baseText);
       if(testReplaceResult) {
-        //Success we found the working regex! Give descriptive error message to user and log suggested regex with new line in correct place
+        /*Success we found the working regex! Give descriptive error message to user and log suggested regex with new line in correct place*/
         console.log(`Suggested regex improvement:
 ${candidateRegex}`);
         throw new Error('Suggested improvement found! Error with line break, failed to find match for regex. See logged output for regex to use instead that should hopefully fix this.');
