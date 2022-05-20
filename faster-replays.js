@@ -1,14 +1,15 @@
 var replayMultiplier = 0.5;
+var sliderPosition = 20;
 
 let replaySpeedMod = function(){
-  if(!(/minesweeper\.online\/game/.test(window.location.href))) {
-    alert('You should be running this on minesweeper.online/game/... ya dingus!');
+  if(!(/minesweeper\.online/.test(window.location.href))) {
+    alert('You should be running this on minesweeper.online ya dingus!');
     return;
   }
 
   if(!(document.getElementById('replay_play_btn'))) {
-    alert('You should be running this on a page with a replay ya dingus!');
-    return;
+    alert('Note - you will need to visit a page with a replay for the slider to show. ' +
+    'The bookmarklet only needs to be run again if you navigate off minesweeper.online or refresh the page.');
   }
 
   const scripts = document.body.getElementsByTagName('script');
@@ -29,7 +30,9 @@ function processCode(code) {
   let pauseUnpause = code.match(/on\("click",function\(\){([$a-zA-Z0-9_]{0,6}\.[$a-zA-Z0-9_]{0,6})\(\)}\)\.append\(\$\("<span>",{id:"replay_play_btn",/)[1];
 
   /*UI*/
-  addSlider(pauseUnpause);
+  if(document.getElementById('replay_play_btn')) {
+    addSlider(pauseUnpause);
+  }
 
   /*Find name of the object that contains timer related functions*/
   let objectWithReplayStuff = code.match(/([$a-zA-Z0-9_]{0,6})={[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:!1,/)[1];
@@ -77,37 +80,46 @@ function processCode(code) {
   funcWithCursor = objectWithReplayStuff + '.' + assertReplace(funcWithCursor,':','=');
 
   eval(funcWithCursor);
+
+  /*Find name of object containing results-block related functions*/
+  let objectWithResultsBlockStuff = code.match(/([$a-zA-Z0-9_]{0,6})={[$a-zA-Z0-9_]{0,6}:"[$a-zA-Z0-9_]{0,6}",[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:null,[$a-zA-Z0-9_]{0,6}:{},/)[1];
+
+  /*Hook into where the results block gets set up, so that we can add the slider whenever this occurs*/
+  let funcWithInitiateResultsHtml = findFunctionInCode(code, /[$a-zA-Z0-9_]{0,6}:function\([a-z],[a-z],[a-z],[a-z],[a-z],[a-z],[a-z]\)$/,
+  /[a-z]&&\([$a-zA-Z0-9_]{0,6}\.[$a-zA-Z0-9_]{0,6}=[a-z]\),this\.[$a-zA-Z0-9_]{0,6}\(this\.[$a-zA-Z0-9_]{0,6}\)&&this\.[$a-zA-Z0-9_]{0,6}\(\)/);
+  
+  funcWithInitiateResultsHtml = assertReplace(funcWithInitiateResultsHtml,
+    /[a-z]&&\([$a-zA-Z0-9_]{0,6}\.[$a-zA-Z0-9_]{0,6}=[a-z]\),this\.[$a-zA-Z0-9_]{0,6}\(this\.[$a-zA-Z0-9_]{0,6}\)&&this\.[$a-zA-Z0-9_]{0,6}\(\)/,
+    `$&, addSlider('${pauseUnpause}')`);
+
+  /*Currently function looks like abc:function(...){...}*/
+  /*change it to look like def.abc=function(...){...}*/
+  funcWithInitiateResultsHtml = objectWithResultsBlockStuff + '.' + assertReplace(funcWithInitiateResultsHtml,':','=');
+
+  eval(funcWithInitiateResultsHtml);
 }
 
 function addSlider(pauseUnpause) {
   let sliderContainer = document.createElement('div');
   sliderContainer.style =  'max-width:200px';
   let sliderHtml = `
-  <label for="replay-speed">Replay Speed x<span id="multiplier">2</span></label>
-  <input type="range" id="replay-speed" name="replay-speed" value="20" min="1" max="23">
+  <label for="replay-speed">Replay Speed x<span id="multiplier">${calculateMultiplier(sliderPosition)}</span></label>
+  <input type="range" id="replay-speed" name="replay-speed" value="${sliderPosition}" min="1" max="27">
   `;
   sliderContainer.innerHTML = sliderHtml;
 
   /*document.getElementsByClassName('wrapper-pavel-inside')[0].firstChild.appendChild(sliderContainer);*/
   document.getElementsByClassName('result-block')[0].firstChild.prepend(sliderContainer);
 
-  document.getElementById('replay-speed').addEventListener('input', function() {
-    
+  document.getElementById('replay-speed').addEventListener('input', function() {    
+    sliderPosition = this.value;
 
-    let sliderPosition = this.value;
-    let multiplier = 1;
+    let multiplier = calculateMultiplier(sliderPosition);
 
-    /*Scale value to map to common values*/
-    if(sliderPosition >= 1 && sliderPosition <= 9) {
-      multiplier = 0.01 * sliderPosition;/*0.01 through 0.09*/
-    } else if(sliderPosition >= 10 && sliderPosition <= 18) {
-      multiplier = 0.1 * (sliderPosition - 9);/*0.1 through 0.9*/
-    } else if(sliderPosition >= 19 && sliderPosition <= 23) {
-      multiplier = sliderPosition - 18;/*1 through 5*/
-    }
+    document.getElementById('multiplier').textContent = multiplier;
 
+    /*global variable that affects replay speed*/
     replayMultiplier = 1/multiplier;
-    document.getElementById('multiplier').textContent = Math.round(multiplier * 100) / 100;
     
     /*Slighty hacky - pause/unpause to fix bug where replay speed doesn't properly update when the replay is already running*/
     let replayStartButton = document.getElementById('replay_play_btn');
@@ -117,6 +129,24 @@ function addSlider(pauseUnpause) {
     }
     
   });
+}
+
+/*How fast the replay is sped up based on where the slider is*/
+function calculateMultiplier(sliderPosition) {
+  let multiplier = 1;
+
+  /*Scale value to map to common values*/
+  if(sliderPosition >= 1 && sliderPosition <= 4) {
+    multiplier = 0.02 * sliderPosition;/*0.02 through 0.08*/
+  } else if(sliderPosition >= 5 && sliderPosition <= 23) {
+    multiplier = 0.1 * (sliderPosition - 4);/*0.1 through 1.9*/
+  } else if(sliderPosition >= 24 && sliderPosition <= 27) {
+    multiplier = sliderPosition - 22;/*1 through 5*/
+  }
+
+  multiplier = Math.round(multiplier * 100) / 100;
+
+  return multiplier;
 }
 
 /*Helper functions below taken from my google snake mods.*/
