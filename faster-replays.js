@@ -67,6 +67,11 @@ function processCode(code) {
     /(animate\([a-z],)([a-z]\)},this\),)/,
     '$1 replayMultiplier * $2 replayMultiplier *');
 
+  /*Animation for chording*/
+  funcWithCursor = assertReplace(funcWithCursor,
+    /(removeClass\([a-z]\)},this\),)([a-z]\)}},this\),)/,
+    '$1 replayMultiplier * $2 replayMultiplier *');
+
   /*Currently function looks like abc:function(t){...}*/
   /*change it to look like def.abc=function(t){...}*/
   funcWithCursor = objectWithReplayStuff + '.' + assertReplace(funcWithCursor,':','=');
