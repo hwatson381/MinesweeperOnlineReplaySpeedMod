@@ -7,6 +7,12 @@ let replaySpeedMod = function(){
     return;
   }
 
+  if(window.replaySpeedModIsCurrentlyRunning) {
+    alert('Already running! Go to a replay to see it in action!');
+    return;
+  }
+  window.replaySpeedModIsCurrentlyRunning = true;
+
   if(!(document.getElementById('replay_play_btn'))) {
     alert('Note - you will need to visit a page with a replay for the slider to show. ' +
     'The bookmarklet only needs to be run again if you navigate off minesweeper.online or refresh the page.');
